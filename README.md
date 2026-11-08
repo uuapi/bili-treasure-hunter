@@ -6,7 +6,7 @@
 
 **B 站 UID 寻号 · 判定 · 筛选 —— 桌面版 + 安卓版，全引擎本机运行**
 
-![Build](https://github.com/uuapi/bili-treasure-hunter/actions/workflows/build.yml/badge.svg)
+[![构建双端安装包](https://img.shields.io/github/actions/workflow/status/uuapi/bili-treasure-hunter/build.yml?style=for-the-badge&label=%E6%9E%84%E5%BB%BA%E5%8F%8C%E7%AB%AF%E5%AE%89%E8%A3%85%E5%8C%85)](https://github.com/uuapi/bili-treasure-hunter/actions/workflows/build.yml)
 ![Platform](https://img.shields.io/badge/平台-Windows%20%7C%20Android-00AEEC?style=for-the-badge)
 ![Download](https://img.shields.io/badge/下载-Releases-FB7299?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge)
