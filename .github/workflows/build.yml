@@ -83,10 +83,18 @@ jobs:
         run: python tests/test_hunter.py
 
       - name: 打包 exe
-        run: pyinstaller --onefile --windowed --name 号海捞珍 \
-          --icon "2233/icon.ico" \
-          --add-data "2233/1920x1080.jpg;assets" \
-          bili_hunter_gui.py
+        run: |
+          pyinstaller --onefile --windowed --name 号海捞珍 \
+            --icon "2233/icon.ico" \
+            --add-data "2233/1920x1080.jpg;assets" \
+            bili_hunter_gui.py 2>&1 | tee pyinstaller.log
+          exit ${PIPESTATUS[0]}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pyinstaller日志
+          path: pyinstaller.log
 
       - uses: actions/upload-artifact@v4
         with:
