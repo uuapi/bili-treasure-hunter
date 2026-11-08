@@ -142,9 +142,8 @@ cd android && bash build_apk.sh
 
 | 触发 | 动作 |
 |---|---|
-| 推送到 `main` | 自动构建双端安装包 → Artifacts 可下载 |
-| 推送 `v*` 标签 | 自动发布 Release 并附双端安装包 |
-| 每次构建 | 先跑 Python 37 项 + JS 40 项测试，全绿才出包 |
+| 推送到 `main` | 自动递增版本号 → 构建双端安装包 → **自动发布 Release** |
+| 每次构建 | 先跑 Python 37 项 + JS 40 项测试，全绿才发布 |
 
 > 建议在仓库 Settings → Secrets 中配置 `ANDROID_KEYSTORE_B64`
 > （本地 `android/sign.keystore` 的 base64 编码），保证每次构建同一签名，

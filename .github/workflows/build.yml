@@ -1,9 +1,8 @@
-name: 构建双端安装包
+name: 构建并发布
 
 on:
   push:
     branches: [main]
-    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -13,9 +12,37 @@ env:
   PYTHONIOENCODING: utf-8
   PYTHONUTF8: '1'
 
+concurrency:
+  group: release-serial
+  cancel-in-progress: false
+
 jobs:
+  version:
+    name: 计算版本号
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: bump
+        run: |
+          git fetch --tags --force origin || true
+          last=$(git tag --list 'v*' --sort=-v:refname | head -1 | sed 's/^v//')
+          if [ -z "$last" ]; then
+            ver="1.0.0"
+          else
+            IFS='.' read -r maj min pat <<< "$last"
+            ver="$maj.$min.$((pat + 1))"
+          fi
+          echo "version=v$ver" >> "$GITHUB_OUTPUT"
+          echo "本次版本: v$ver"
+
   android:
     name: 安卓 APK
+    needs: version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,13 +85,19 @@ jobs:
       - name: 构建 APK
         run: bash android/build_apk.sh
 
+      - name: 按版本号命名
+        run: |
+          mv "android/dist/号海捞珍.apk" \
+             "android/dist/号海捞珍-${{ needs.version.outputs.version }}.apk"
+
       - uses: actions/upload-artifact@v4
         with:
           name: 号海捞珍-安卓
-          path: android/dist/号海捞珍.apk
+          path: android/dist/*.apk
 
   windows:
     name: Windows exe
+    needs: version
     runs-on: windows-latest
     defaults:
       run:
@@ -84,44 +117,33 @@ jobs:
 
       - name: 打包 exe
         run: |
-          python -m PyInstaller --onefile --windowed --name 号海捞珍 \
+          python -m PyInstaller --onefile --windowed \
+            --name "号海捞珍-${{ needs.version.outputs.version }}" \
             --icon "2233/icon.ico" \
             --add-data "2233/1920x1080.jpg;assets" \
             bili_hunter_gui.py 2>&1 | tee pyinstaller.log
           exit ${PIPESTATUS[0]}
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pyinstaller日志
-          path: pyinstaller.log
+        env:
+          VER: ${{ needs.version.outputs.version }}
 
       - uses: actions/upload-artifact@v4
         with:
           name: 号海捞珍-Windows
-          path: dist/号海捞珍.exe
+          path: dist/*.exe
 
   release:
     name: 发布 Release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [android, windows]
+    needs: [version, android, windows]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
           path: release-dist
 
-      - name: 版本号命名
-        run: |
-          cd release-dist
-          for f in 号海捞珍.apk 号海捞珍.exe; do
-            [ -f "$f" ] && mv "$f" "${f%.*}-v${GITHUB_REF_NAME#v}.${f##*.}" || true
-          done
-
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.version.outputs.version }}
+          name: 号海捞珍 ${{ needs.version.outputs.version }}
           files: release-dist/*
           generate_release_notes: true
