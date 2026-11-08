@@ -6,11 +6,12 @@
 
 **B 站 UID 寻号 · 判定 · 筛选 —— 桌面版 + 安卓版，全引擎本机运行**
 
-![Release](https://img.shields.io/github/v/release/uuapi/bili-treasure-hunter?style=for-the-badge&color=FB7299)
+![Build](https://github.com/uuapi/bili-treasure-hunter/actions/workflows/build.yml/badge.svg)
 ![Platform](https://img.shields.io/badge/平台-Windows%20%7C%20Android-00AEEC?style=for-the-badge)
+![Download](https://img.shields.io/badge/下载-Releases-FB7299?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge)
 ![Tests](https://img.shields.io/badge/测试-82%20passing-17994f?style=for-the-badge)
-![License](https://img.shields.io/github/license/uuapi/bili-treasure-hunter?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-FB7299?style=for-the-badge)
 ![Stars](https://img.shields.io/github/stars/uuapi/bili-treasure-hunter?style=for-the-badge&color=yellow)
 
 **双端安装包 · 五级判定体系 · 7 类靓号规则 · 82 项自动化测试 · 全引擎本机运行 · 零费用**
@@ -83,7 +84,7 @@
 
 | 平台 | 文件 | 说明 |
 |---|---|---|
-| 🪟 Windows | `号海捞珍-vX.X.X.exe` | 单文件免安装，双击即用 |
+| 💻 Windows | `号海捞珍-vX.X.X.exe` | 单文件免安装，双击即用 |
 | 📱 Android | `号海捞珍.apk` | 允许未知来源后安装 |
 
 ### PC 桌面版
