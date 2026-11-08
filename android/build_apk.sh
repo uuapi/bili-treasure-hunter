@@ -10,13 +10,25 @@ APP="$HERE/app"
 WORK="$HERE/build"
 OUT="$HERE/dist"
 
+# 跨平台：按文件存在性检测（Windows 有 .exe/.bat，Linux 无后缀）
+if [ -f "$BT/apksigner.bat" ]; then
+  AAPT2="$BT/aapt2.exe"
+  ZIPALIGN="$BT/zipalign.exe"
+  APKSIGNER="$BT/apksigner.bat"
+else
+  AAPT2="$BT/aapt2"
+  ZIPALIGN="$BT/zipalign"
+  APKSIGNER="$BT/apksigner"
+  chmod +x "$AAPT2" "$ZIPALIGN" "$APKSIGNER" 2>/dev/null || true
+fi
+
 echo "=== 1/6 编译资源 (aapt2 compile) ==="
 rm -rf "$WORK" "$OUT"
 mkdir -p "$WORK/classes" "$WORK/dex" "$OUT"
-"$BT/aapt2.exe" compile --dir "$APP/res" -o "$WORK/res.zip"
+"$AAPT2" compile --dir "$APP/res" -o "$WORK/res.zip"
 
 echo "=== 2/6 链接资源 (aapt2 link) ==="
-"$BT/aapt2.exe" link -o "$WORK/base.apk" \
+"$AAPT2" link -o "$WORK/base.apk" \
   -I "$AJ" \
   --manifest "$APP/AndroidManifest.xml" \
   -A "$APP/assets" \
@@ -51,7 +63,7 @@ with zipfile.ZipFile(tmp, 'a', compression=zipfile.ZIP_DEFLATED) as zout:
 shutil.move(tmp, base)
 print('classes.dex 已注入')
 PYEOF
-"$BT/zipalign.exe" -f -p 4 "$WORK/base.apk" "$WORK/aligned.apk"
+"$ZIPALIGN" -f -p 4 "$WORK/base.apk" "$WORK/aligned.apk"
 
 echo "=== 6/6 签名 (apksigner) ==="
 KS="$HERE/sign.keystore"
@@ -61,9 +73,9 @@ if [ ! -f "$KS" ]; then
     -dname "CN=HaoHaiLaoZhen, O=HaoHai" > /dev/null 2>&1
   echo "已生成签名密钥 sign.keystore"
 fi
-"$BT/apksigner.bat" sign --ks "$KS" --ks-pass pass:haohai123 \
+"$APKSIGNER" sign --ks "$KS" --ks-pass pass:haohai123 \
   --out "$OUT/号海捞珍.apk" "$WORK/aligned.apk"
-"$BT/apksigner.bat" verify --print-certs "$OUT/号海捞珍.apk" | head -4
+"$APKSIGNER" verify --print-certs "$OUT/号海捞珍.apk" | head -4
 
 echo "=== 完成 ==="
 ls -la "$OUT/"

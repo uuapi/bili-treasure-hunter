@@ -1,0 +1,115 @@
+name: 构建双端安装包
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: 安卓 APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 下载 Android 构建组件
+        run: |
+          mkdir -p tools/android && cd tools/android
+          curl -fL --retry 3 -o build-tools.zip https://dl.google.com/android/repository/build-tools_r34-linux.zip
+          curl -fL --retry 3 -o platform.zip https://dl.google.com/android/repository/platform-34-ext7_r02.zip
+          python3 -c "import zipfile; [zipfile.ZipFile(z).extractall('.') for z in ('build-tools.zip','platform.zip')]"
+          chmod +x android-14/aapt2 android-14/zipalign android-14/apksigner
+
+      - name: JS 引擎测试
+        run: node android/test/engine.test.js
+
+      - name: 签名密钥
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > android/sign.keystore
+            echo "使用 Secret 中的稳定签名密钥"
+          else
+            keytool -genkeypair -keystore android/sign.keystore -alias haohai \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass haohai123 -keypass haohai123 \
+              -dname "CN=HaoHaiLaoZhen, O=HaoHai"
+            echo "⚠️ 未配置 ANDROID_KEYSTORE_B64，本次使用临时签名（覆盖安装需先卸载旧版）"
+          fi
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+
+      - name: 构建 APK
+        run: bash android/build_apk.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 号海捞珍-安卓
+          path: android/dist/号海捞珍.apk
+
+  windows:
+    name: Windows exe
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: 安装依赖
+        run: pip install PySide6 requests openpyxl pyinstaller
+
+      - name: Python 引擎测试
+        run: python tests/test_hunter.py
+
+      - name: 打包 exe
+        run: pyinstaller --onefile --windowed --name 号海捞珍 \
+          --icon "2233/icon.ico" \
+          --add-data "2233/1920x1080.jpg;assets" \
+          bili_hunter_gui.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 号海捞珍-Windows
+          path: dist/号海捞珍.exe
+
+  release:
+    name: 发布 Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [android, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: release-dist
+
+      - name: 版本号命名
+        run: |
+          cd release-dist
+          for f in 号海捞珍.apk 号海捞珍.exe; do
+            [ -f "$f" ] && mv "$f" "${f%.*}-v${GITHUB_REF_NAME#v}.${f##*.}" || true
+          done
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release-dist/*
+          generate_release_notes: true
