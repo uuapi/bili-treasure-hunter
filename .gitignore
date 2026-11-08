@@ -1,0 +1,33 @@
+# ===== Python =====
+__pycache__/
+*.pyc
+
+# ===== 构建产物 =====
+build/
+dist/
+*.spec
+
+# ===== 运行产物（含真实扫描数据，严禁上传） =====
+gui_stdout.log
+dev_null.txt
+.ui_assets/
+scan_out/
+_fulltest/
+
+# ===== 工具链（约 400MB，见 README「环境准备」） =====
+tools/
+_download/
+
+# ===== 签名密钥（泄露 = 他人可冒充你发布更新） =====
+android/sign.keystore
+*.keystore
+*.idsig
+
+# ===== 历史版本（本地留档，不入库） =====
+bili_hunter_optimized.py
+bili_hunter_v2.py
+
+# ===== 系统杂项 =====
+Thumbs.db
+desktop.ini
+build.log

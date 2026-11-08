@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>号海捞珍</title>
+<style>
+:root { --pink:#FB7299; --pink2:#e05f88; --blue:#00AEEC; --ink:#1f2430; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; }
+body {
+  font-family: system-ui, -apple-system, 'Microsoft YaHei UI', sans-serif;
+  color: var(--ink); font-size:14px;
+  background: url('978x2160.jpg') top center / cover no-repeat fixed,
+              linear-gradient(160deg, #fdeef3 0%, #e7f2fb 100%);
+}
+#veil { position:fixed; inset:0; background:rgba(255,255,255,45);
+  pointer-events:none; z-index:-1; }
+.card, .pill, #tabbar { -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  backdrop-filter: blur(16px) saturate(1.15); }
+.wrap { position:relative; max-width:480px; margin:0 auto;
+  padding:12px 12px calc(86px + env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; gap:12px; }
+.card { background:rgba(255,255,255,170); border:1px solid rgba(255,255,255,235);
+  border-radius:14px; padding:12px 14px; }
+.cardtitle { color:var(--pink2); font-weight:700; font-size:13px; margin-bottom:8px; }
+h1 { font-size:22px; color:var(--pink2); }
+.sub { color:#5a6470; font-size:11px; }
+.row { display:flex; align-items:center; gap:6px; margin-top:8px; flex-wrap:wrap; }
+.row > label { flex:none; }
+.row > input[type=text], .row > input[type=number], .row > select { flex:1; min-width:0; }
+input[type=text], input[type=number], select {
+  padding:8px 9px; border:1px solid rgba(31,36,48,55); border-radius:8px;
+  background:rgba(255,255,255,238); color:var(--ink); font-size:14px; }input:focus, select:focus { border-color:var(--pink); outline:none; }
+input[type=checkbox] { width:18px; height:18px; accent-color:var(--pink); }
+.btn { width:100%; padding:12px; border:none; border-radius:10px; background:var(--pink);
+  color:#fff; font-size:16px; font-weight:700; margin-top:10px; }
+.btn.blue { background:var(--blue); }
+.btn.gray { background:rgba(120,130,145,215); }
+.btn:disabled { background:rgba(200,205,212,220); color:#8a9098; }
+.bar { height:16px; background:rgba(255,255,255,230); border-radius:8px;
+  overflow:hidden; margin-top:8px; }
+.bar > div { height:100%; width:0%; border-radius:8px;
+  background:linear-gradient(90deg, var(--pink), var(--blue)); transition:width .4s; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.chip { background:rgba(251,114,153,135); border-radius:12px; padding:4px 10px;
+  font-size:12px; font-weight:600; }
+.chip.g { background:rgba(23,153,79,150); color:#fff; }
+.chip.b { background:rgba(0,174,236,140); color:#fff; }
+.hit { border-left:4px solid var(--pink); background:rgba(255,255,255,175);
+  border-radius:8px; padding:8px 10px; margin-top:8px; font-size:13px; }
+.hit .name { font-weight:700; font-size:15px; }
+.hit .badge { background:#17994f; color:#fff; border-radius:6px; padding:1px 7px;
+  font-size:11px; margin-left:6px; }
+.hit .badge.gray { background:#8a94a3; }
+#tabbar { position:fixed; bottom:0; left:0; right:0; z-index:5;
+  display:flex; gap:6px; background:rgba(255,255,255,190);
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+  border-top:1px solid rgba(255,255,255,245); }
+#tabbar .tb { flex:1; text-align:center; padding:9px 0; border-radius:10px;
+  font-size:12px; font-weight:700; color:#5a6470; background:rgba(255,255,255,180); }
+#tabbar .tb.on { background:var(--pink); color:#fff; }
+.page { display:none; }
+.page.on { display:flex; flex-direction:column; gap:12px; }
+.muted { color:#5a6470; font-size:11px; }
+.pill { background:rgba(255,255,255,205); border-radius:16px; padding:8px 14px;
+  border:1px solid rgba(255,255,255,245); font-size:12px; word-break:break-all; }
+table { border-collapse:collapse; width:100%; font-size:12px; }
+td { padding:6px 4px; vertical-align:top; }
+td.k { color:var(--pink2); font-weight:700; white-space:nowrap; }
+</style>
+</head>
+<body>
+<div id="veil"></div>
+<div class="wrap">
+
+  <div class="card">
+    <h1>号海捞珍</h1>
+    <div class="sub">在号海之中，捞取属于你的珍宝 · 全引擎本机运行</div>
+  </div>
+
+  <!-- 页：寻号 -->
+  <div class="page on" id="p-hunt">
+    <div class="card">
+      <div class="cardtitle">🎯 当前任务</div>
+      <div class="pill" id="msg">⏳ 静候佳号 — 到「设置」页调整规则，点下方开始寻号</div>
+      <div class="bar"><div id="fill"></div></div>
+      <div class="chips">
+        <span class="chip" id="c-progress">0%</span>
+        <span class="chip" id="c-exists">记录 0</span>
+        <span class="chip g" id="c-shen">神号类 0</span>
+        <span class="chip b" id="c-bot">注册机号 0</span>
+        <span class="chip" id="c-fail">失败 0</span>
+      </div>
+      <button class="btn" id="btn-start">🚀 开始寻号</button>
+      <button class="btn gray" id="btn-stop" disabled>⏹ 停止（已扫结果已保存）</button>
+    </div>
+    <div class="card">
+      <div class="cardtitle">🏆 实时命中（双击行直达主页）</div>
+      <div id="hits"></div>
+      <div class="muted" id="hits-more"></div>
+    </div>
+  </div>
+
+  <!-- 页：设置 -->
+  <div class="page" id="p-cfg">
+    <div class="card">
+      <div class="cardtitle">📍 扫描区间</div>
+      <div class="row"><label style="width:42px">从</label><input type="number" id="cfg-start" value="1000000"></div>
+      <div class="row"><label style="width:42px">到</label><input type="number" id="cfg-end" value="2000000"></div>
+      <div class="row"><label style="width:42px">尾号</label><input type="text" id="cfg-suffix" placeholder="如 0901，留空不限"></div>
+    </div>
+    <div class="card">
+      <div class="cardtitle">💎 靓号规则</div>
+      <div class="row" id="cfg-types"></div>
+      <div class="row"><label style="width:70px">连号位数</label>
+        <select id="cfg-minrun"><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option></select>
+        <label style="margin-left:12px"><input type="checkbox" id="cfg-pretty" checked> 只扫靓号</label></div>
+      <div class="row"><label style="width:70px"></label>
+        <label><input type="checkbox" id="cfg-tail"> 附加尾部规律（尾4/尾3）</label></div>
+    </div>
+    <div class="card">
+      <div class="cardtitle">🍀 数字偏好</div>
+      <div class="row" id="cfg-digits">
+        <label><input type="checkbox" id="cfg-no4"> 不带4</label>
+        <label><input type="checkbox" id="cfg-no7"> 不带7</label>
+        <label><input type="checkbox" id="cfg-no0"> 不含0</label>
+      </div>
+      <div class="row"><label style="width:70px">额外排除</label><input type="text" id="cfg-exclude" placeholder="如 3，可多位"></div>
+      <div class="row"><label style="width:70px">必含数字</label><input type="text" id="cfg-must" placeholder="如 8 或 68"></div>
+    </div>
+    <div class="card">
+      <div class="cardtitle">⚙️ 引擎调优</div>
+      <div class="row"><label style="width:70px">并发数</label>
+        <select id="cfg-threads"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>6</option><option>8</option></select>
+        <span class="muted">手机建议 2~4</span></div>
+      <div class="row"><label style="width:70px">间隔(秒)</label>
+        <input type="number" id="cfg-dmin" value="2" step="0.5" min="0.5" max="60" style="width:70px">
+        <span>~</span>
+        <input type="number" id="cfg-dmax" value="5" step="0.5" min="0.5" max="60" style="width:70px"></div>
+      <div class="row"><label style="width:70px">失败重试</label>
+        <select id="cfg-retries"><option>2</option><option>3</option><option selected>4</option><option>5</option></select></div>
+      <div class="row"><label><input type="checkbox" id="cfg-noresume"> 从头重扫（忽略断点）</label></div>
+      <button class="btn blue" id="btn-savecfg">💾 保存设置</button>
+    </div>
+  </div>
+
+  <!-- 页：战果 -->
+  <div class="page" id="p-res">
+    <div class="card">
+      <div class="cardtitle">📦 战果统计</div>
+      <div class="chips">
+        <span class="chip" id="r-total">记录 0</span>
+        <span class="chip g" id="r-shen">极品神号 0</span>
+        <span class="chip g" id="r-shen2">神号 0</span>
+        <span class="chip b" id="r-bot">注册机号 0</span>
+      </div>
+      <button class="btn blue" id="btn-export">⬇ 导出 CSV 到下载目录</button>
+      <button class="btn gray" id="btn-clear">🗑 清空本机记录</button>
+      <div class="muted" style="margin-top:6px">CSV 保存在手机「下载/号海捞珍」目录；电脑端 scan_out 数据与此互相独立。</div>
+    </div>
+    <div class="card">
+      <div class="cardtitle">📜 命中清单</div>
+      <div id="rlist"></div>
+    </div>
+  </div>
+
+  <!-- 页：说明 -->
+  <div class="page" id="p-help">
+    <div class="card">
+      <div class="cardtitle">🌟 新手必读：判定等级</div>
+      <p class="muted">先记住——<b>三无</b> = 0级 + 0粉 + 0关注，代表注册后从未使用；<b>规范名</b> = 小写字母开头、3~18位英文数字；<b>乱码名</b> = 像机器随机敲出来的名字（如 xk7f2m）。</p>
+      <table>
+        <tr><td class="k">🏆 极品神号</td><td>三无 + 规范名 + 乱码名。注册后从未用过、名字还像机器生成的——大概率是注册机批量注册后遗弃的号，顶级收藏目标。</td></tr>
+        <tr><td class="k">✨ 神号</td><td>三无 + 规范名。从未使用的干净号，名字更像真人取的。</td></tr>
+        <tr><td class="k">🤖 注册机号</td><td>乱码名 + 0级，但已有少量粉丝/关注——疑似批量生产的半成品。</td></tr>
+        <tr><td class="k">❓ 乱码名</td><td>名字像机器生成，但账号已升过级。</td></tr>
+        <tr><td class="k">─ 普通</td><td>不符合以上特征。</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="cardtitle">💎 靓号类型图鉴</div>
+      <p class="muted">顺子 1234567 · 豹子 1111111 · 回文 1234321 · 交替 1212121；连号位数 5=标准靓号，4=小靓号；数字偏好可组合"不带4/7"+"必含8"。</p>
+    </div>
+    <div class="card">
+      <div class="cardtitle">🛡 使用须知</div>
+      <p class="muted">扫描期间请保持本页在前台（屏幕常亮已自动开启）；手机网络下 -352 风控比宽带更容易触发，若频繁拦截请切换 Wi-Fi 或降低并发。仅供技术研究与数据分析，请遵守 B 站用户协议与相关法律法规，后果自负。</p>
+    </div>
+    <div class="card">
+      <div class="cardtitle">🔧 环境自检</div>
+      <div class="muted" id="env-check">检测中…</div>
+      <div class="muted" id="env-wall">壁纸: 检测中…</div>
+    </div>
+  </div>
+
+</div>
+
+<div id="tabbar">
+  <div class="tb on" data-t="p-hunt">🚀 寻号</div>
+  <div class="tb" data-t="p-cfg">⚙️ 设置</div>
+  <div class="tb" data-t="p-res">📦 战果</div>
+  <div class="tb" data-t="p-help">❓ 说明</div>
+</div>
+
+<script src="engine.js"></script>
+<script>
+/* ================= 工具 ================= */
+const $ = id => document.getElementById(id);
+
+/* ================= 网络桥 ================= */
+let tagSeq = 0;
+const pending = new Map();
+window.__httpDone = function(tag, result) {
+  const r = pending.get(tag);
+  if (r) { pending.delete(tag); r(result); }
+};
+function httpGet(url) {
+  return new Promise(resolve => {
+    const tag = 'T' + (++tagSeq) + '_' + Date.now();
+    pending.set(tag, resolve);
+    if (window.Android && Android.httpGetAsync) {
+      Android.httpGetAsync(tag, url);
+      setTimeout(() => { if (pending.has(tag)) { pending.delete(tag); resolve('ERR:超时'); } }, 20000);
+    } else {
+      pending.delete(tag);
+      resolve('ERR:NoBridge(请在APK内运行)');
+    }
+  });
+}
+
+/* ================= 扫描控制器 ================= */
+const State = {
+  running:false, stop:false, cfg:null, targets:[], idx:0,
+  done:{}, results:[], stats:{}, current:'', rate:0, msg:'⏳ 静候佳号',
+  coolUntil:0, consec:0, t0:0
+};
+const FIELDS = ['UID','昵称','关注数','粉丝数','账号等级','标记','判定','注册时间','获赞','投稿数'];
+
+function loadPersist() {
+  try {
+    State.done = JSON.parse(localStorage.getItem('hh_done') || '{}');
+    State.results = JSON.parse(localStorage.getItem('hh_results') || '[]');
+  } catch (e) { State.done = {}; State.results = []; }
+}
+function persist() {
+  try {
+    localStorage.setItem('hh_done', JSON.stringify(State.done));
+    localStorage.setItem('hh_results', JSON.stringify(State.results));
+  } catch (e) {}
+}
+loadPersist();
+
+function startScan(cfg) {
+  if (State.running) return;
+  State.cfg = cfg;
+  State.stop = false; State.running = true;
+  State.targets = []; State.idx = 0;
+  State.stats = {done:0, total:0, exists:0, shen:0, bot:0, gib:0, emp:0, fail:0, skipped:0};
+  State.msg = '准备中…'; State.t0 = Date.now(); State.consec = 0; State.coolUntil = 0;
+  if (window.Android) Android.keepAwake(true);
+  run_scan();
+}
+
+async function run_scan() {
+  const c = State.cfg, stop_wait = () => sleep(300);
+  try {
+    if (window.Android) Android.toast('开始寻号 · 屏幕常亮已开启');
+    eng_session_warmup();
+    State.msg = '本地筛选靓号中…';
+    await sleep(50);
+    let pairs = [];
+    if (c.pretty) {
+      pairs = [];
+      const step = Math.max(1, Math.floor((c.end - c.start + 1) / 200000));
+      for (let uid = c.start; uid <= c.end; uid++) {
+        const tags = pretty_tags(uid, c.minRun, c.tail);
+        if (tags.length) pairs.push([uid, tags]);
+        if ((uid - c.start) % 500000 === 0 && uid !== c.start) {
+          State.msg = '本地筛选 ' + (uid - c.start).toLocaleString() + '/' + (c.end - c.start + 1).toLocaleString();
+          render();
+          await sleep(0);
+        }
+      }
+      const wanted = new Set(c.types);
+      pairs = pairs.filter(p => p[1].some(t => wanted.has(t)));
+    }
+    let tset = new Set(pairs.map(p => p[0]));
+    const markMap = {};
+    for (const [u, tags] of pairs) markMap[u] = tags.join('|');
+    if (c.suffix) {
+      const bt = build_targets(c.start, c.end, c.suffix);
+      if (bt) {
+        for (let u = bt.first; u <= bt.last; u += bt.step) {
+          tset.add(u);
+          markMap[u] = (markMap[u] ? markMap[u] + '|' : '') + '尾号' + c.suffix;
+        }
+      }
+    }
+    let targets = tset.size ? order_targets([...tset], markMap) : null;
+    const exc = [...new Set(c.exclude_digits || '')].join('');
+    const must = [...new Set(c.must_digits || '')].join('');
+    if (exc || must) {
+      const ok = u => { const s = String(u);
+        if ([...exc].some(x => s.includes(x))) return false;
+        return [...must].every(x => s.includes(x)); };
+      targets = targets === null
+        ? Array.from({length:c.end - c.start + 1}, (_,i)=>c.start+i).filter(ok)
+        : targets.filter(ok);
+      markMap = Object.fromEntries(Object.entries(markMap).filter(([u]) =>
+        targets.includes(parseInt(u, 10))));
+    }
+    for (const k in markMap) _markMap[k] = markMap[k];
+    const total = targets === null ? c.end - c.start + 1 : targets.length;
+    if (total === 0) { State.msg = '没有符合条件的目标'; State.running = false; render(); return; }
+    State.targets = targets === null ? [] : targets;
+    State.stats = {done:0, total, exists:0, shen:0, bot:0, gib:0, emp:0, fail:0, skipped:0};
+    const iter = targets === null
+      ? (function*(){ for (let u = c.start; u <= c.end; u++) yield u; })()
+      : (function*(){ for (const u of targets) yield u; })();
+
+    if (!c.noResume) {
+      for (const u of iter) {
+        const st = State.done[u];
+        if (st && st !== 'failed') { State.stats.skipped++; State.stats.done++; continue; }
+        State.queue.push(u);
+      }
+    } else {
+      for (const u of iter) State.queue.push(u);
+    }
+    State.queue_total = State.queue.length;
+    State.msg = '待扫 ' + State.queue.length.toLocaleString() + ' 个（已跳过 '
+      + State.stats.skipped.toLocaleString() + '）';
+    render();
+
+    const workers = [];
+    for (let i = 0; i < c.threads; i++) workers.push(worker_loop(c, i));
+    await Promise.all(workers);
+    State.running = false;
+    if (window.Android) Android.keepAwake(false);
+    State.msg = State.stop ? ('⏹ 已停止 · 已扫结果已保存') :
+      ('🏁 寻号完成 · 记录 ' + State.stats.exists + ' · 神号类 ' + State.stats.shen);
+    persist(); render();
+    if (window.Android) Android.toast(State.msg.slice(0, 40));
+  } catch (e) {
+    State.running = false;
+    State.msg = '❌ 异常: ' + e.message;
+    render();
+  }
+}
+
+State.queue = [];
+async function worker_loop(c, wid) {
+  const stop_wait = ms => sleep(ms);
+  while (!State.stop && State.queue.length) {
+    const uid = State.queue.shift();
+    if (State.done[uid] && State.done[uid] !== 'failed') continue;
+    let verdict = '', recorded = false;
+    for (let attempt = 1; attempt <= c.maxRetries && !State.stop; attempt++) {
+      const factor = 1 + 0.5 * Math.min(State.consec, 6);
+      const gap = rand(c.minDelay, c.maxDelay) * 1000 * factor;
+      const now = Date.now();
+      const earliest = Math.max(now, State.coolUntil, State.nextDispatch || 0);
+      if (earliest > now) await sleep(earliest - now);
+      if (State.stop) return;
+      State.nextDispatch = Date.now() + rand(c.minDelay, c.maxDelay) * 1000;
+      State.current = uid;
+      const res = await httpGet('https://api.bilibili.com/x/web-interface/card?mid=' + uid + '&photo=true');
+      const pr = parse_resp(res);
+      if (pr.status === 'ok' || pr.status === 'empty') { State.consec = 0; }
+      if (pr.status === 'blocked') {
+        State.consec++;
+        const cool = Math.min(30 + 30 * (attempt - 1) + Math.floor(rand(0, 30)), 300) * 1000;
+        State.coolUntil = Math.max(State.coolUntil, Date.now() + cool);
+        State.msg = '⚠️ 风控拦截，全体冷却 ' + Math.round(cool/1000) + 's';
+        render();
+        continue;
+      }
+      if (pr.status === 'error') { await stop_wait(rand(3000, 6000)); continue; }
+      const card = pr.card;
+      const uname = card ? (card.name || '') : '';
+      const level = card ? ((card.level_info || {}).current_level || 0) : 0;
+      const fans = card ? (card.fans || 0) : 0;
+      const fol = card ? (card.attention || 0) : 0;
+      const isShen = (level === 0 && fans === 0 && fol === 0 && STRICT_NAME.test(uname));
+      const isGib = card ? is_gibberish(uname) : false;
+      verdict = classify(isShen, isGib, level);
+      const mark = markMapOf(uid);
+      const row = {'UID': uid, '昵称': uname, '关注数': fol, '粉丝数': fans,
+        '账号等级': level, '标记': mark, '判定': verdict,
+        '注册时间': '', '获赞': card ? (card._like_num || '') : '',
+        '投稿数': card ? (card._archive_count || '') : ''};
+      State.results.push(row);
+      State.stats.exists++;
+      if (verdict.endsWith('神号')) { State.stats.shen++; on_hit(row); }
+      else if (verdict === '注册机号') { State.stats.bot++; on_hit(row); }
+      else if (verdict === '乱码名') { State.stats.gib++; }
+      State.done[uid] = pr.status === 'ok' ? 'ok' : 'empty';
+      recorded = true;
+      break;
+    }
+    if (!recorded && !State.stop) {
+      State.stats.fail++;
+      State.done[uid] = 'failed';
+    }
+    State.stats.done++;
+    State.rate = (Date.now() - State.t0) / 1000 / Math.max(State.stats.done - State.stats.skipped, 1);
+    if (State.stats.done % 5 === 0 || State.stats.done === State.stats.total) {
+      persist();
+      render();
+    }
+  }
+}
+const _markMap = {};
+function markMapOf(uid) { return _markMap[uid] || ''; }
+
+let nextDispatch = 0;
+
+function on_hit(row) {
+  const box = $('hits');
+  if (box.children.length >= 200) box.removeChild(box.firstChild);
+  const d = document.createElement('div');
+  d.className = 'hit';
+  const badge = row['判定'].endsWith('神号')
+    ? '<span class="badge">' + row['判定'] + '</span>'
+    : (row['判定'] ? '<span class="badge gray">' + row['判定'] + '</span>' : '');
+  d.innerHTML = '<span class="name">' + esc(row['昵称']) + '</span>' + badge
+    + '<br>UID ' + row['UID'] + ' · Lv.' + row['账号等级']
+    + ' · 粉' + row['粉丝数'] + ' 关' + row['关注数']
+    + ' · 标记[' + esc(row['标记'] || '-') + ']';
+  d.ondblclick = () => {
+    if (window.Android) Android.toast('UID ' + row['UID']);
+  };
+  box.appendChild(d);
+  const s = State.stats;
+  $('c-exists').textContent = '记录 ' + s.exists.toLocaleString();
+  $('c-shen').textContent = '神号类 ' + s.shen;
+  $('c-bot').textContent = '注册机号 ' + s.bot;
+  $('c-fail').textContent = '失败 ' + s.fail;
+  persist();
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+function render() {
+  const s = State.stats;
+  $('msg').textContent = State.msg;
+  const pct = s.total ? (s.done / s.total * 100) : 0;
+  $('fill').style.width = pct.toFixed(2) + '%';
+  $('c-progress').textContent = pct.toFixed(1) + '%';
+  $('c-exists').textContent = '记录 ' + s.exists.toLocaleString();
+  $('c-shen').textContent = '神号类 ' + s.shen;
+  $('c-bot').textContent = '注册机号 ' + s.bot;
+  $('c-fail').textContent = '失败 ' + s.fail;
+  const eta = Math.max(s.total - s.done, 0) * (State.rate || 0);
+  if (State.running) {
+    $('msg').textContent = State.msg.includes('风控') ? State.msg :
+      (s.done.toLocaleString() + '/' + s.total.toLocaleString() + ' · 当前 ' + State.current
+       + ' · ' + (State.rate || 0).toFixed(1) + 's/个 · 剩余 ~'
+       + Math.floor(eta/3600) + 'h' + String(Math.floor(eta%3600/60)).padStart(2,'0') + 'm');
+  }
+  const r = $('r-total');
+  if (r) { refreshResStats(); }
+}
+
+function refreshResStats() {
+  let shen = 0, shen2 = 0, bot = 0;
+  for (const r of State.results) {
+    if (r['判定'] === '极品神号') shen++;
+    else if (r['判定'] === '神号') shen2++;
+    else if (r['判定'] === '注册机号') bot++;
+  }
+  $('r-total').textContent = '记录 ' + State.results.length.toLocaleString();
+  $('r-shen').textContent = '极品神号 ' + shen;
+  $('r-shen2').textContent = '神号 ' + shen2;
+  $('r-bot').textContent = '注册机号 ' + bot;
+  renderResList();
+}
+function renderResList() {
+  const box = $('rlist');
+  box.innerHTML = '';
+  let n = 0;
+  for (const r of State.results.slice().sort((a, b) => a.UID - b.UID)) {
+    if (r['判定']) {
+      const d = document.createElement('div');
+      d.className = 'hit';
+      d.innerHTML = '<span class="name">' + esc(r['昵称']) + '</span>'
+        + '<span class="badge">' + r['判定'] + '</span><br>UID ' + r['UID'];
+      box.appendChild(d);
+      if (++n >= 200) break;
+    }
+  }
+  if (!n) box.innerHTML = '<div class="muted">暂无命中 · 数据文件在手机 下载/号海捞珍 目录</div>';
+}
+
+/* ================= 设置持久化 ================= */
+const CFG_KEYS = ['start','end','suffix','minrun','pretty','tail','no4','no7','no0',
+                  'exclude','must','threads','dmin','dmax','retries','noresume'];
+function saveCfg() {
+  const o = {};
+  for (const k of CFG_KEYS) {
+    const el = $('cfg-' + k);
+    o[k] = el.type === 'checkbox' ? el.checked : el.value;
+  }
+  localStorage.setItem('hh_cfg', JSON.stringify(o));
+  if (window.Android) Android.toast('设置已保存');
+}
+function loadCfg() {
+  let o;
+  try { o = JSON.parse(localStorage.getItem('hh_cfg') || '{}'); } catch (e) { o = {}; }
+  for (const k of CFG_KEYS) {
+    const el = $('cfg-' + k);
+    if (!el || o[k] === undefined) continue;
+    if (el.type === 'checkbox') el.checked = !!o[k]; else el.value = o[k];
+  }
+}
+
+/* ================= 类型勾选框生成 ================= */
+const TYPE_NAMES = ['顺子', '豹子', '回文', '交替', '尾4', '尾3'];
+function buildTypeBoxes() {
+  const box = $('cfg-types');
+  TYPE_NAMES.forEach((t, i) => {
+    const lab = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.dataset.t = t;
+    cb.checked = t === '顺子' || t === '豹子';
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(' ' + t));
+    box.appendChild(lab);
+  });
+}
+
+/* ================= 界面事件 ================= */
+document.querySelectorAll('#tabbar .tb').forEach(tb => {
+  tb.onclick = () => {
+    document.querySelectorAll('#tabbar .tb').forEach(x => x.classList.remove('on'));
+    tb.classList.add('on');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+    $(tb.dataset.t).classList.add('on');
+    if (tb.dataset.t === 'p-res') refreshResStats();
+    if (tb.dataset.t === 'p-help') envCheck();
+  };
+});
+$('btn-savecfg').onclick = saveCfg;
+$('btn-clear').onclick = () => {
+  State.results = []; State.done = {};
+  localStorage.removeItem('hh_results'); localStorage.removeItem('hh_done');
+  refreshResStats();
+  if (window.Android) Android.toast('已清空本机记录');
+};
+$('btn-export').onclick = () => {
+  if (!State.results.length) {
+    if (window.Android) Android.toast('暂无数据可导出');
+    return;
+  }
+  let csv = '\ufeff' + FIELDS.join(',') + '\n';
+  for (const r of State.results.slice().sort((a, b) => a.UID - b.UID)) {
+    csv += FIELDS.map(f => '"' + String(r[f] == null ? '' : r[f]).replace(/"/g, '""') + '"').join(',') + '\n';
+  }
+  const name = '号海捞珍_' + new Date().toISOString().slice(0, 10) + '.csv';
+  if (window.Android) {
+    Android.toast(Android.saveFile(name, csv));
+  } else {
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name; a.click();
+  }
+};
+function _markMap_clear() { for (const k in _markMap) delete _markMap[k]; }
+function markMapOf(uid) { return _markMap[uid] || ''; }
+
+/* ================= 启动 ================= */
+/* 壁纸直接内置于 body 背景（此前实测可用），渐变仅作图片失效兜底 */
+document.body.classList.add('has-wallpaper');
+function envCheck() {
+  const el = document.getElementById('env-check');
+  if (!el) return;
+  const br = !!(window.Android && Android.httpGetAsync);
+  el.innerHTML = '壁纸: ✓ 已内置界面背景'
+    + '<br>桥接: ' + (br ? '✓ 正常' : '✗ 不可用')
+    + '<br>WebView: ' + esc(navigator.userAgent.slice(0, 66)) + '…';
+}
+buildTypeBoxes();
+loadCfg();
+$('btn-start').onclick = () => {
+  if (State.running) return;
+  const cfg = {
+    start: parseInt($('cfg-start').value, 10) || 0,
+    end: parseInt($('cfg-end').value, 10) || 0,
+    suffix: $('cfg-suffix').value.trim(),
+    minRun: parseInt($('cfg-minrun').value, 10) || 5,
+    pretty: $('cfg-pretty').checked,
+    tail: $('cfg-tail').checked,
+    threads: parseInt($('cfg-threads').value, 10) || 2,
+    minDelay: parseFloat($('cfg-dmin').value) || 2,
+    maxDelay: parseFloat($('cfg-dmax').value) || 5,
+    maxRetries: parseInt($('cfg-retries').value, 10) || 4,
+    noResume: $('cfg-noresume').checked,
+    excludeDigits: ($('cfg-exclude').value.trim() + ($('cfg-no4').checked ? '4' : '')
+      + ($('cfg-no7').checked ? '7' : '') + ($('cfg-no0').checked ? '0' : '')),
+    mustDigits: $('cfg-must').value.trim(),
+    types: TYPE_NAMES.filter(t => {
+      const boxes = document.querySelectorAll('#cfg-types input');
+      for (const b of boxes) if (b.dataset.t === t) return b.checked;
+      return false;
+    })
+  };
+  if (cfg.start > cfg.end) { if (window.Android) Android.toast('结束 UID 需 ≥ 起始'); return; }
+  saveCfg();
+  State.queue = [];
+  for (const k in _markMap) delete _markMap[k];
+  startScan(cfg);
+  document.querySelector('#tabbar .tb').click();
+};
+$('btn-stop').onclick = () => { State.stop = true; };
+setInterval(() => { if (State.running) render(); }, 1200);
+refreshResStats();
+</script>
+</body>
+</html>
