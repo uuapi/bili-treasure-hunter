@@ -117,7 +117,7 @@ jobs:
 
       - name: 打包 exe
         run: |
-          python -m PyInstaller --onefile --windowed \
+          python -m PyInstaller --onefile --windowed --noconfirm \
             --name "号海捞珍-${{ needs.version.outputs.version }}" \
             --icon "2233/icon.ico" \
             --add-data "2233/1920x1080.jpg;assets" \
@@ -125,6 +125,32 @@ jobs:
           exit ${PIPESTATUS[0]}
         env:
           VER: ${{ needs.version.outputs.version }}
+
+      - name: 失败诊断日志
+        if: failure()
+        run: |
+          { echo "=== 运行环境 ==="
+            python --version
+            python -m PyInstaller --version
+            echo "=== pyinstaller.log ==="
+            cat pyinstaller.log 2>/dev/null || echo "(无)"
+          } > 诊断_打包失败.txt 2>&1
+
+      - name: 上传打包日志（含失败诊断）
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.version }}
+          files: |
+            诊断_打包失败.txt
+            pyinstaller.log
+        continue-on-error: true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pyinstaller日志
+          path: pyinstaller.log
 
       - uses: actions/upload-artifact@v4
         with:
