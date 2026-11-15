@@ -231,11 +231,65 @@ def session_warmup():
         log(f'⚠️ 会话预热失败: {str(e)[:60]}（不影响继续扫描）')
 
 
+class SessionRotator:
+    """会话轮换器：实测 -352 风控按 Cookie/会话 计数（单身份 ~100 请求即触发），
+    单会话承载 _LIMIT 个请求即主动换全新 buvid；触发风控时立即废弃当前身份。
+    实验依据：同一 IP 下，全新会话/全新 buvid/无 Cookie 均可正常请求。"""
+
+    _LIMIT = 50
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.session = None
+        self.n = 0
+        self.rotations = 0
+
+    def _new_session(self):
+        s = requests.Session()
+        s.trust_env = False
+        s.headers.update(session.headers)
+        # 按高并发扩容连接池，避免线程间争抢默认 10 连接导致复用失效
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=20, pool_maxsize=20)
+        s.mount('https://', adapter)
+        s.mount('http://', adapter)
+        try:
+            d = (s.get('https://api.bilibili.com/x/frontend/finger/spi',
+                       timeout=5).json().get('data') or {})
+            if d.get('b_3'):
+                s.cookies.set('buvid3', d['b_3'], domain='.bilibili.com')
+                s.cookies.set('buvid4', d.get('b_4', ''), domain='.bilibili.com')
+        except Exception:
+            pass  # 领取失败就用裸会话（实测裸会话也能正常请求）
+        return s
+
+    def get(self):
+        """取当前会话；达到单身份配额自动换新。"""
+        with self.lock:
+            if self.session is None or self.n >= self._LIMIT:
+                self.session = self._new_session()
+                self.n = 0
+                self.rotations += 1
+                if self.rotations % 50 == 1:
+                    log(f'🔄 已轮换 {self.rotations} 个会话身份')
+            else:
+                self.n += 1
+            return self.session
+
+    def expire(self):
+        """当前会话触发风控：立即废弃，下次请求换新身份。"""
+        with self.lock:
+            self.session = None
+
+
+ROTATOR = SessionRotator()
+
+
 def query_uid(uid, timeout):
     """返回 (status, card)：ok / empty / blocked / error。"""
     url = f"https://api.bilibili.com/x/web-interface/card?mid={uid}&photo=true"
     try:
-        resp = session.get(url, timeout=timeout)
+        resp = ROTATOR.get().get(url, timeout=timeout)
     except requests.exceptions.Timeout:
         _set_reason('请求超时')
         return 'error', None
@@ -296,10 +350,10 @@ class RateCtl:
                 return False
 
     def report_blocked(self, attempt):
-        """某线程触发风控：全局冷却，所有线程同步退避。"""
+        """某线程触发风控：短冷却即可（轮换器已换新身份，无需长退避）。"""
         with self.lock:
             self.consec += 1
-            cool = min(30 + 30 * attempt + random.randint(0, 30), 300)
+            cool = min(4 + 8 * attempt + random.randint(0, 4), 40)
             self.cool_until = max(self.cool_until, time.monotonic() + cool)
         return cool
 
@@ -318,6 +372,7 @@ def check_uid(uid, args, rate, stop_event):
             rate.report_ok()
             return status, card
         if status == 'blocked':
+            ROTATOR.expire()  # 当前身份已被标记，立即换新 buvid
             cool = rate.report_blocked(attempt)
             log(f"⚠️ UID {uid} 触发风控，全体冷却 {cool}s"
                 f"（第 {attempt + 1}/{args.max_retries} 次尝试）")
